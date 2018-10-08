@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>主机列表</title>
+    <style> {# 定义三个事件 #}
+        .hide{
+            display: none;
+        }
+        .shade{
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 0;
+            bottom: 0;
+            background: black;
+            opacity: 0.6;
+            z-index: 100;
+        } {# 背景层 #}
+        .add-model{
+            position: fixed;
+            height: 300px;
+            width: 400px;
+            top: 100px;
+            left: 50%;
+            z-index: 101;
+            border: 1px solid red;
+            background: white;
+            margin-left: -200px;
+        } {# 添加层 #}
+    </style>
+</head>
+<body>
+<h3>主机列表（对象）</h3>
+<div>
+    <input id="add_host" type="button" value="添加">
+</div>
+    <table border="1">
+        <thead>
+            <TR>
+                <TH>序号</TH>
+                <TH>主机名</TH>
+                <TH>IP</TH>
+                <TH>端口</TH>
+{#                <TH>业务线ID</TH>#}
+                <TH>业务线名称</TH>
+{#                <TH>业务线编码</TH>#}
+            </TR>
+        </thead>
+        <tbody>
+            {% for row in host_list %}
+               <tr h_id='{{ row.nid }}' b_id='{{ row.bus.id }}'style="text-align: center">
+                   <td>{{ forloop.counter }}</td> {# for循环特有的计数器，还有5种特性 #}
+                   <td>{{ row.hostname }}</td>
+                   <td>{{ row.ip }}</td>
+                   <td>{{ row.port }}</td>
+                   <td>{{ row.bus.caption }}</td>
+{#                   <td>{{ row.bus.code }}</td>#}
+               </tr>
+            {% endfor %}
+
+        </tbody>
+    </table>
+<h3>业务线列表(字典）</h3>
+    <table border="1">
+        <thead>
+            <TR>
+                <TH>主机名</TH>
+                <TH>业务线名称</TH>
+            </TR>
+        </thead>
+        <tbody>
+            {% for row in v2 %}
+               <tr h_id="row.nid" b_id="row.bus_id" style="text-align: center">
+                   <td>{{ row.hostname }}</td>
+                   <td>{{ row.bus__caption }}</td>{# 后端使用了双下划线跨表操作，这里只能用获取的字典key取值 #}
+               </tr>
+            {% endfor %}
+
+        </tbody>
+    </table>
+<h3>业务线列表(元组）</h3>
+    <table border="1">
+        <thead>
+            <TR>
+                <TH>主机名</TH>
+                <TH>业务线名称</TH>
+            </TR>
+        </thead>
+        <tbody>
+            {% for row in v3 %}
+               <tr h_id="row.0" b_id="row.2" style="text-align: center">
+                   <td>{{ row.1 }}</td>
+                   <td>{{ row.3 }}</td>{# 后端使用values_list，这里只能使用索引取值 #}
+               </tr>
+            {% endfor %}
+
+        </tbody>
+    </table>
+<div class="shade hide"></div>
+<div class="add-model hide">
+    <form action="/host/" method="post" style="text-align: center">
+        <div class="group">
+            <input id="host" type="text" placeholder="主机名" name="hostname">
+        </div>
+        <div class="group">
+            <input id="ip" type="text" placeholder="IP" name="ip">
+        </div>
+        <div class="group">
+            <input id="port" type="text" placeholder="端口" name="port">
+        </div>
+        <div class="group">
+            <select id="bus" name="bus" >
+                {% for row in bus_list %}
+                    <option value={{ row.id }}>{{ row.caption }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <input type="submit" value="提交" />
+        <a id="ajax_submit" style="display: inline-block;padding: 4px;background: blue;color: white;">ajax提交</a>
+        <input type="button" id="cancel" value="取消" />
+        <span id="error_msg" style="color: red"></span>
+    </form>
+</div>
+<script src="/static/jquery-3.3.1.js"></script>
+<script>
+    $(function(){
+        $('#add_host').click(function(){ {# 提交按键绑定事件 #}
+            $('.shade, .add-model').removeClass('hide');
+        });
+        $('#cancel').click(function(){ {# 取消按键绑定事件 #}
+            $('.shade, .add-model').addClass('hide');
+        });
+        $('#ajax_submit').click(function(){ {# ajax提交按键绑定事件 #}
+            $.ajax({
+                url: "/test_ajax",
+                type: "POST",
+                data: {"hostname":$('#host').val(), 'ip': $('#ip').val(), 'port': $('#port').val(), 'bus':$('#bus').val()}, {# $('#(id_name)').val(): 根据id名取输入的值 #}
+                success:function (data) { {# data是服务端返回的字符串 #}
+                    var obj = JSON.parse(data); {# 字符串转字典 #}
+{#                    console.log(data);#} {# 打印数据到浏览器的console #}
+                    if( obj.status ){
+                        location.reload(); {# 刷新当前页 #}
+                    }else{
+                        $('#error_msg').text(obj.error);
+                    }
+                }
+            })
+        });
+    })
+</script>
+</body>
+</html>
